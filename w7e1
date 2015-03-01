@@ -1,0 +1,53 @@
+A:
+(applied_python)[rafael@ip-172-30-0-161 djproject]$ python manage.py makemigrations net_system
+Migrations for 'net_system':
+  0001_initial.py:
+    - Create model Credentials
+    - Create model NetworkDevice
+(applied_python)[rafael@ip-172-30-0-161 djproject]$ python manage.py migrate
+Operations to perform:
+  Apply all migrations: admin, contenttypes, net_system, auth, sessions
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying auth.0001_initial... OK
+  Applying admin.0001_initial... OK
+  Applying net_system.0001_initial... OK
+  Applying sessions.0001_initial... OK
+  
+(applied_python)[rafael@ip-172-30-0-161 djproject]$ cd net_system/
+(applied_python)[rafael@ip-172-30-0-161 net_system]$ python load_devices.py 
+(applied_python)[rafael@ip-172-30-0-161 net_system]$ python load_credentials.py 
+
+>>> from net_system.models import NetworkDevice, Credentials
+>>> net_devices = NetworkDevice.objects.all()
+>>> net_devices
+[<NetworkDevice: pynet-rtr1>, <NetworkDevice: pynet-rtr2>, <NetworkDevice: pynet-sw1>, 
+<NetworkDevice: pynet-sw2>, <NetworkDevice: pynet-sw3>, <NetworkDevice: pynet-sw4>]
+>>> 
+>>> creds = Credentials.objects.all()
+>>> creds
+
+B:
+>>> from net_system.models import NetworkDevice
+>>> creds = Credentials.objects.all()
+>>> cisco_creds = creds[0]
+>>> arista_creds = creds[1]
+>>> 
+>>> for a_device in net_devices:
+...     if 'cisco' in a_device.device_class:
+...         a_device.credentials = cisco_creds
+...     else:
+...         a_device.credentials = arista_creds
+...     a_device.save()
+... 
+
+Verify:
+>>> for a_device in net_devices:
+...     print a_device, a_device.credentials
+... 
+pynet-rtr1 pyclass
+pynet-rtr2 pyclass
+pynet-sw1 admin1
+pynet-sw2 admin1
+pynet-sw3 admin1
+pynet-sw4 admin1
