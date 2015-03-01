@@ -1,9 +1,12 @@
 A:
+Create Migartions for the initial db setup:
 (applied_python)[rafael@ip-172-30-0-161 djproject]$ python manage.py makemigrations net_system
 Migrations for 'net_system':
   0001_initial.py:
     - Create model Credentials
     - Create model NetworkDevice
+    
+Apply changes to the database:
 (applied_python)[rafael@ip-172-30-0-161 djproject]$ python manage.py migrate
 Operations to perform:
   Apply all migrations: admin, contenttypes, net_system, auth, sessions
@@ -13,11 +16,15 @@ Running migrations:
   Applying admin.0001_initial... OK
   Applying net_system.0001_initial... OK
   Applying sessions.0001_initial... OK
-  
+
+Load devices and credentials values to database:
 (applied_python)[rafael@ip-172-30-0-161 djproject]$ cd net_system/
 (applied_python)[rafael@ip-172-30-0-161 net_system]$ python load_devices.py 
 (applied_python)[rafael@ip-172-30-0-161 net_system]$ python load_credentials.py 
 
+
+B:
+Crete devices and credential objects:
 >>> from net_system.models import NetworkDevice, Credentials
 >>> net_devices = NetworkDevice.objects.all()
 >>> net_devices
@@ -27,7 +34,7 @@ Running migrations:
 >>> creds = Credentials.objects.all()
 >>> creds
 
-B:
+Bind device to the right credentials:
 >>> from net_system.models import NetworkDevice
 >>> creds = Credentials.objects.all()
 >>> cisco_creds = creds[0]
@@ -41,7 +48,7 @@ B:
 ...     a_device.save()
 ... 
 
-Verify:
+Verify device/credentials bindings:
 >>> for a_device in net_devices:
 ...     print a_device, a_device.credentials
 ... 
