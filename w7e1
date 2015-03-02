@@ -24,7 +24,7 @@ Load devices and credentials values to database:
 
 
 B:
-Crete devices and credential objects:
+Crete devices and credentials objects:
 >>> from net_system.models import NetworkDevice, Credentials
 >>> net_devices = NetworkDevice.objects.all()
 >>> net_devices
