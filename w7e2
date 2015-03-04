@@ -1,0 +1,145 @@
+Ex2:
+# Created SnmpCredential model, and added snmp_crdedentials ForeignKey to NetworkDevice model.
+(applied_python)[rafael@ip-172-30-0-161 net_system]$ cat models.py
+from django.db import models
+
+class Credentials(models.Model):
+    username        = models.CharField(max_length=50)
+    password        = models.CharField(max_length=50)
+    description     = models.CharField(max_length=200, blank=True, null=True)
+
+    def __unicode__(self):
+        return u'%s' % (self.username)
+
+class SnmpCredentials(models.Model):
+    auth_key        = models.CharField(max_length=50)
+    auth_proto      = models.CharField(max_length=25)
+    community       = models.CharField(max_length=50)
+    description     = models.CharField(max_length=200, blank=True, null=True)
+    encrypt_key     = models.CharField(max_length=50)
+    encrypt_proto   = models.CharField(max_length=25)
+    snmp_version    = models.CharField(max_length=50)
+    username        = models.CharField(max_length=50)
+
+
+    def __unicode__(self):
+        return u'%s' % self.snmp_version
+
+class NetworkDevice(models.Model):
+    device_name     = models.CharField(primary_key=True, max_length=80)
+    ip_address      = models.IPAddressField()
+    device_class    = models.CharField(max_length=50)
+    ssh_port        = models.IntegerField(blank=True, null=True)
+    api_port        = models.IntegerField(blank=True, null=True)
+    vendor          = models.CharField(max_length=50, blank=True, null=True)
+    model           = models.CharField(max_length=50, blank=True, null=True)
+    device_type     = models.CharField(max_length=50, blank=True, null=True)
+    os_version      = models.CharField(max_length=100, blank=True, null=True)
+    serial_number   = models.CharField(max_length=50, blank=True, null=True)
+    uptime_seconds  = models.IntegerField(blank=True, null=True)
+    credentials     = models.ForeignKey(Credentials, blank=True, null=True)
+    snmp_credentials= models.ForeignKey(SnmpCredentials, blank=True, null=True)
+    snmp_port       = models.IntegerField(blank=True, null=True)
+
+    def __unicode__(self):
+        return u'%s' % (self.device_name)
+
+
+
+# Added SnmpCredentials to the credentials load.
+(applied_python)[rafael@ip-172-30-0-161 net_system]$ cat load_credentials.py 
+
+from net_system.models import Credentials, SnmpCredentials
+import django
+
+if __name__ == "__main__":
+
+    django.setup()
+
+    cisco_creds = Credentials.objects.get_or_create(
+        username = 'pyclass',
+        password = '88newclass',
+        description = 'Cisco router credentials'
+    )
+    print cisco_creds
+
+    arista_creds = Credentials.objects.get_or_create(
+        username = 'admin1',
+        password = '99saturday',
+        description = 'Arista credentials'
+    )
+    print arista_creds
+
+    # exercise 2a.
+    snmp_creds = SnmpCredentials.objects.get_or_create(
+        auth_proto='sha',
+        auth_key='galileo1',
+        description='snmp v3 credentials',
+        encrypt_key='galileo1',
+        encrypt_proto='aes128',
+        snmp_version='snmp3',
+        username='pysnmp'
+    )
+    print snmp_creds
+
+
+EX2(a,b,c):
+# Create migrations for for initial database setup with changes.
+(applied_python)[rafael@ip-172-30-0-161 djproject]$ python manage.py makemigrations net_system
+Migrations for 'net_system':
+  0002_auto_20150303_1214.py:
+    - Create model SnmpCredentials
+    - Add field snmp_credentials to networkdevice
+    - Add field snmp_port to networkdevice
+ 
+ 
+    
+# Apply model changes to database
+(applied_python)[rafael@ip-172-30-0-161 djproject]$ python manage.py migrate
+Operations to perform:
+  Apply all migrations: admin, contenttypes, net_system, auth, sessions
+Running migrations:
+  Applying net_system.0002_auto_20150303_1214... OK
+ 
+ 
+  
+# Load the updated credentials to database.
+(applied_python)[rafael@ip-172-30-0-161 net_system]$ python load_credentials.py 
+(<Credentials: pyclass>, False)
+(<Credentials: admin1>, False)
+(<SnmpCredentials: snmp3>, True)
+
+
+
+# Create NetworkDevice and SnmpCredentials objects.
+>>> from net_system.models import NetworkDevice, Credentials, SnmpCredentials
+>>> net_devices = NetworkDevice.objects.all()
+>>> 
+>>> creds = SnmpCredentials.objects.all()
+>>> snmp_creds = creds[0]
+>>> snmp_creds
+<SnmpCredentials: snmp3>
+
+
+
+# Assign SNMP credentials to each cisco router & SNMP port 7961 to rtr1, 8061 to rtr2
+python manage.py shell
+>>> for a_device in net_devices:
+...     if 'cisco' in a_device.device_class:
+...         if a_device.device_name == 'pynet-rtr1':
+...             a_device.snmp_port = 7961
+...         elif a_device.device_name == 'pynet-rtr2':
+...             a_device.snmp_port = 8061
+...         a_device.snmp_credentials = snmp_creds
+...         a_device.save()
+
+
+
+# Verify each router binded to the correct port and SNMP credentials.
+>>> for a_device in net_devices:
+...     if 'cisco' in a_device.device_class:
+...         print 'Device: {}, SNMP Port: {}, SNMP Credentials {}.'\
+                  .format(a_device, a_device.snmp_port, a_device.snmp_credentials)
+... 
+Device: pynet-rtr1, SNMP Port: 7961, SNMP Credentials snmp3.
+Device: pynet-rtr2, SNMP Port: 8061, SNMP Credentials snmp3.
